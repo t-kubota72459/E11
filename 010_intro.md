@@ -6,7 +6,7 @@
 
 1. 自分の手で開発環境（Thonny）を作り、マイコンに命令を出す。
 2. **AD3（測定器）** を使って、電気の波形を見る。
-3. **Google Colab** に証拠の画像とコードを貼り付けて提出する。
+3. **Google ドキュメント(または Word)** に証拠の画像とコードを貼り付けて PDF にして提出する。
 
 ---
 
@@ -22,8 +22,8 @@
    * 初回起動時に設定画面が出たら、Languageは **「日本語」**、Initial settingsは **「Standard」** のままで「Let's go!」を押します。
 3. **画面のレイアウト**
    * **左半分**: `Google Meet`（先生のデモ画面を見るため）
-   * **右半分**: `Thonny` と `WaveForms (AD3用)` を並べる
-   * **裏側**: `Google Classroom`（最後に使います）
+   * **右半分**: `Thonny` と `WaveForms (AD3用)`を並べる
+   * **裏側**: `Google Classroom`, `Google ドキュメント or Word`（最後に使います）
 
 > **💡 Thonny ってなに？**  
 > Python のプログラム (ソースコード) はテキスト形式で記述する。「メモ帳」のようなテキストエディタでもプログラミンは可能だが、マイコン用の Python の設定やプログラムの転送機能を別のアプリで実施する必要があり、手間がかかる。そのような手間を減らし、快適にプログラム開発できようにしたツールを IDE という。Python 用 IDE のひとつとして Thonny (ソニー) があり、今回はそれを使用する。(pp.46)
@@ -60,28 +60,31 @@
 
 1. **回路を組む**
    * ESP32の `GPIO 2` ピン → `抵抗` → `LED (足の長い方から短い方へ)` → `ESP32のGND` ピン
+
+   &nbsp;
+
    <div align="center">
    <img src="images/01_intro_01.png" width="60%">
    <p>図1 : ESP32 と LED 接続</p>
    </div>
-
 
 1. **AD3を接続する**
    * AD3の **オレンジの線（Scope Ch1）** を、`GPIO 2` ピン（抵抗の手前）に挿します。
 2. **コードを手打ちする**
    * Thonnyの「Shell（`>>>` の後）」に、以下のコードを1行ずつ手打ちして `Enter` を押してください。WaveFormsの画面と、手元のLEDに注目！
 
-```python
-from machine import Pin
-led = Pin(2, Pin.OUT)
-led.value(1)
-```
-> **👁️ 観察**: `led.value(1)` を打った瞬間、LEDが光り、WaveFormsの波形が **0Vから 3.3V に跳ね上がった** ことを確認してください。（プログラムの「1」は、物理的な「3.3V」のことです）
+   ```python
+   from machine import Pin
+   led = Pin(2, Pin.OUT)
+   led.value(1)
+   ```
+   
+   > **👁️ 観察**: `led.value(1)` を打った瞬間、LEDが光り、WaveFormsの波形が **0Vから 3.3V に跳ね上がった** ことを確認してください。（プログラムの「1」は、物理的な「3.3V」のことです）
 
-```python
-led.value(0)
-```
-> **👁️ 観察**: 今度はLEDが消え、波形が **0V に戻った** ことを確認してください。
+   ```python
+   led.value(0)
+   ```
+   > **👁️ 観察**: 今度はLEDが消え、波形が **0V に戻った** ことを確認してください。
 
 ---
 
@@ -90,18 +93,18 @@ led.value(0)
 毎回手打ちするのは大変なので、プログラムを書いて自動で点滅させます。
 
 1. Thonnyの上画面（エディタ）に、以下のコードを書きます。
-```python
-import utime
-from machine import Pin
+   ```python
+   import utime
+   from machine import Pin
 
-led = Pin(2, Pin.OUT)
+   led = Pin(2, Pin.OUT)
 
-while True:
-    led.value(1)
-    utime.sleep(1.0)
-    led.value(0)
-    utime.sleep(1.0)
-```
+   while True:
+      led.value(1)
+      utime.sleep(1.0)
+      led.value(0)
+      utime.sleep(1.0)
+   ```
 
 2. **「保存（フロッピーのマーク）」** を押し、**「This computer」** を選んで `lesson1.py` という名前でPCに保存します。
 
@@ -117,10 +120,11 @@ while True:
 
 動いた証拠をレポートに残します。
 
-1. Google Classroomから、**「第1回レポート用（Google Colab）」** を開きます。
-3. Colabの文字のあたりを **ダブルクリック** すると、編集できるようになります。
-4. **コードを貼る**: Thonnyのコードをコピーし、指定の枠内に貼り付けます。
-5. **画像を貼る**: WaveFormsの波形が綺麗に出ている画面をスクリーンショット（`Windowsキー + Shift + S`）し、Colabの指定位置をクリックして `Ctrl + V` で貼り付けます。
-6. **穴埋め**: 測定した電圧（3.3Vと0V）を記入します。
-7. `Shift + Enter` を押してプレビューを確認し、綺麗に表示されていれば **Classroomで提出** して本日は終了です。お疲れ様でした！
-
+1. Google Classroomから、**「第1回レポート用テンプレート」** を開きます。
+2. 実況中継スタイルで作成:  
+    実習が進むごとに、WaveFormsの画面をスクリーンショット（Win + Shift + S）し、レポートの指定位置に Ctrl + V で貼り付けていきます。  
+   Wordやドキュメントなら、画像を貼った後も文章をスラスラ書けます。
+3. **コードを貼る**: Thonnyのコードをコピーし、指定の枠内に貼り付けます。
+4. **PDF にして提出**:  
+   保存した PDF を Classroom で提出して本日は終了です。おつかれさま！  
+   ファイル名は「第１回レポート_学籍番号_氏名.pdf」とすること。
