@@ -5,7 +5,19 @@
     <title>電圧の謎を解け！スライド</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/reset.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/reveal.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/theme/black.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/theme/black.min.css" id="theme">
+    
+    <!-- 印刷用スタイルの読み込み設定 -->
+    <script>
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = window.location.search.match( /print-pdf/gi ) ? 
+            'https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/plugin/print-pdf/print-pdf.min.css' : 
+            'https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/css/print/paper.min.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+    </script>
+
     <style>
         :root {
             --r-main-font-size: 32px;
@@ -36,6 +48,21 @@
         }
         .small-text { font-size: 0.6em; color: #aaa; }
         table { font-size: 0.8em !important; }
+
+        /* --- 印刷用スタイル（背景白・文字黒に調整） --- */
+        @media print {
+            .reveal .slides section {
+                color: black !important;
+                background: white !important;
+                page-break-after: always !important;
+            }
+            .reveal h2, .reveal h3 { color: #333 !important; }
+            .circuit-bg { border: 1px solid #ccc !important; background: white !important; }
+            .emphasis { color: #d00 !important; }
+            .green { color: #080 !important; }
+            table { border-collapse: collapse; }
+            th, td { border: 1px solid #333 !important; }
+        }
     </style>
 </head>
 <body>
