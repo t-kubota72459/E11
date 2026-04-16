@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>第6回：計算の裏側とビットの魔法</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Fira+Code:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --primary: #175ddc;
+            --bg-light: #f0f4f8;
+            --text-dark: #333;
+            --text-muted: #64748b;
+            --accent-orange: #f59e0b;
+            --accent-red: #e11d48;
+            --accent-green: #10b981;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            background-color: #555;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: 'Noto Sans JP', sans-serif;
+            padding: 40px 0;
+            overflow: hidden;
+            height: 100vh;
+            justify-content: center;
+        }
+
+        #presentation-wrapper {
+            width: 1280px;
+            height: 720px;
+            position: relative;
+            overflow: hidden;
+            background-color: white;
+            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.6);
+            transform-origin: center;
+        }
+
+        #slide-track {
+            display: flex;
+            width: 1300%; /* 13 Slides */
+            height: 100%;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .slide {
+            width: calc(100% / 13);
+            height: 100%;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Title Slide Layout */
+        .title-slide {
+            background: linear-gradient(135deg, var(--primary) 0%, #0d3b8e 100%);
+            color: white;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        .title-slide h1 { font-size: 80px; margin: 0; font-weight: 900; }
+        .title-slide p { font-size: 32px; margin-top: 20px; opacity: 0.9; }
+
+        /* General Layouts */
+        .header {
+            background: var(--primary);
+            color: white;
+            padding: 25px 60px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .header h2 { margin: 0; font-size: 40px; font-weight: 700; }
+        .header .step-num {
+            background: white;
+            color: var(--primary);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: 900;
+        }
+
+        .content {
+            flex: 1;
+            padding: 30px 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 50px;
+            align-items: center;
+            height: 100%;
+        }
+
+        /* UI Elements */
+        .bullet-list { list-style: none; padding: 0; margin: 0; }
+        .bullet-list li { font-size: 24px; margin-bottom: 20px; display: flex; align-items: flex-start; gap: 15px; line-height: 1.5; color: var(--text-dark); }
+        .bullet-list i { color: var(--primary); margin-top: 5px; font-size: 26px; }
+
+        pre {
+            background: #1e293b; color: #f8fafc; padding: 20px; border-radius: 12px;
+            font-family: 'Fira Code', monospace; font-size: 22px; line-height: 1.4;
+            border-left: 8px solid #38bdf8; box-shadow: 0 10px 20px rgba(0,0,0,0.1); margin: 0;
+        }
+        .kw { color: #ff823a; font-weight: 700; }
+        .comment { color: #8892b0; font-style: italic; }
+
+        /* --- VISUAL DIAGRAMS --- */
+        .flow-diagram { display: flex; align-items: center; justify-content: center; gap: 25px; margin: 20px 0; }
+        .flow-box { background: white; border: 3px solid var(--primary); border-radius: 15px; padding: 20px; text-align: center; width: 220px; box-shadow: 0 5px 15px rgba(0,0,0,0.05);}
+        .flow-box.core { background: var(--primary); color: white; }
+        .flow-box h3 { margin: 0 0 10px 0; font-size: 24px; }
+        .flow-box p { margin: 0; font-size: 18px; opacity: 0.9; }
+        .flow-arrow { font-size: 36px; color: var(--text-muted); }
+
+        .bit-diagram { display: flex; flex-direction: column; align-items: center; gap: 15px; background: white; padding: 25px; border-radius: 16px; border: 2px solid #cbd5e1; box-shadow: 0 10px 25px rgba(0,0,0,0.05); font-family: 'Fira Code', monospace;}
+        .bit-row { display: flex; gap: 6px; align-items: center; }
+        .bit { width: 40px; height: 50px; border: 2px solid #94a3b8; border-radius: 6px; display: flex; justify-content: center; align-items: center; font-size: 26px; font-weight: bold; color: #1e293b; background: #f8fafc; }
+        .bit.highlight-blue { border-color: var(--primary); background: #e0f2fe; color: var(--primary); }
+        .bit.highlight-red { border-color: var(--accent-red); background: #ffe4e6; color: var(--accent-red); }
+        .bit.highlight-orange { border-color: var(--accent-orange); background: #fef3c7; color: #b45309; }
+        .bit.zero-fill { border-color: #cbd5e1; background: #f1f5f9; color: #94a3b8; border-style: dashed; }
+        .bit-label { font-size: 22px; font-weight: bold; width: 140px; text-align: left; margin-left: 20px; font-family: 'Noto Sans JP', sans-serif; color: var(--text-dark);}
+        .shift-arrow { font-size: 20px; color: var(--primary); font-weight: bold; display: flex; align-items: center; gap: 10px; font-family: 'Noto Sans JP', sans-serif; margin: 5px 0;}
+
+        /* Section Break Layout */
+        .section-break { background: #f8f9fa; justify-content: center; align-items: center; text-align: center; }
+        .section-break h2 { font-size: 64px; color: var(--primary); border-bottom: 8px solid var(--primary); padding-bottom: 20px; margin: 0; }
+
+        /* Navigation Controls */
+        #controls {
+            position: absolute; bottom: 0; width: 100%; height: 50px; background: rgba(255,255,255,0.9);
+            display: flex; justify-content: space-between; align-items: center; padding: 0 30px; border-top: 1px solid #ddd; z-index: 100;
+        }
+        .nav-btn { background: none; border: none; color: var(--primary); font-size: 20px; cursor: pointer; font-weight: bold; padding: 5px 15px; }
+        .nav-dots { display: flex; gap: 8px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; background: #cbd5e1; cursor: pointer; transition: 0.3s; }
+        .dot.active { background: var(--primary); width: 25px; border-radius: 8px; }
+
+        /* =========================================================
+           PRINT SETTINGS (PDFエクスポート用)
+        ========================================================= */
+        @media print {
+            @page { size: 1280px 720px landscape; margin: 0; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            html, body { width: 100% !important; height: auto !important; overflow: visible !important; background-color: #ffffff !important; display: block !important; margin: 0 !important; padding: 0 !important; }
+            #presentation-wrapper { width: 100% !important; height: auto !important; overflow: visible !important; display: block !important; transform: none !important; box-shadow: none !important; position: static !important; }
+            #slide-track { width: 100% !important; height: auto !important; display: block !important; transform: none !important; transition: none !important; position: static !important; }
+            .slide { width: 1280px !important; height: 720px !important; display: flex !important; position: relative !important; page-break-after: always !important; break-after: page !important; page-break-inside: avoid !important; transform: none !important; opacity: 1 !important; visibility: visible !important; margin: 0 !important; border: none !important; }
+            #controls { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="presentation-wrapper">
+    <div id="slide-track">
+
+        <!-- Slide 1: Title -->
+        <div class="slide title-slide">
+            <h1>第6回：計算の裏側と<br>ビットの魔法</h1>
+            <p style="color: #38bdf8; font-weight: bold;">関数の仕組みとデータ構造のビジュアライズ</p>
+        </div>
+
+        <!-- Slide 2: def -->
+        <div class="slide">
+            <div class="header"><div class="step-num">1</div><h2>def：同じことを二度書かない</h2></div>
+            <div class="content">
+                <div class="two-col">
+                    <div>
+                        <p style="font-size: 22px; margin-bottom: 15px;">複雑な計算や何度も使う処理を、一つの「名前」にひとまとめにします。</p>
+                        <ul class="bullet-list">
+                            <li><i class="fa-solid fa-check"></i> コードが短く読みやすくなる</li>
+                            <li><i class="fa-solid fa-check"></i> 修正が必要なとき、1箇所直せば全て直る</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <pre><span class="kw">def</span> blink(times):
+    <span class="kw">for</span> i <span class="kw">in</span> range(times):
+        led.on()
+        sleep(0.2)
+        led.off()
+
+<span class="comment"># 登録した名前を呼ぶだけ</span>
+blink(5)</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 3: return (Visualized) -->
+        <div class="slide">
+            <div class="header"><div class="step-num">2</div><h2>return：結果の返し方</h2></div>
+            <div class="content">
+                <p style="font-size: 22px; text-align: center; margin-bottom: 20px;">関数は材料を受け取り、加工して、製品を返す「工場」のようなものです。</p>
+                
+                <div class="flow-diagram">
+                    <div class="flow-box">
+                        <i class="fa-solid fa-box-open" style="font-size:40px; color:var(--primary); margin-bottom:10px;"></i>
+                        <h3>引数</h3><p>材料 (入力)</p>
+                    </div>
+                    <div class="flow-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+                    <div class="flow-box core">
+                        <i class="fa-solid fa-gears" style="font-size:40px; margin-bottom:10px;"></i>
+                        <h3>関数</h3><p>計算・加工</p>
+                    </div>
+                    <div class="flow-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+                    <div class="flow-box" style="border-color: #ff823a;">
+                        <i class="fa-solid fa-paper-plane" style="font-size:40px; color:#ff823a; margin-bottom:10px;"></i>
+                        <h3 style="color: #ff823a;"><span class="kw">return</span></h3><p>戻り値 (出力)</p>
+                    </div>
+                </div>
+
+                <div style="width: 60%; margin: 20px auto 0;">
+                    <pre><span class="kw">def</span> get_duty(val):
+    duty = (val / 65535) * 100
+    <span class="kw">return</span> duty <span class="comment"># 結果を吐き出す</span>
+
+result = get_duty(32768)</pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 4: Sensor Logic -->
+        <div class="slide">
+            <div class="header"><div class="step-num">3</div><h2>応用：センサー値の変換関数</h2></div>
+            <div class="content">
+                <div class="two-col">
+                    <div>
+                        <p style="font-size: 22px; margin-bottom: 20px;">マイコンが読み取る「0〜65535」のデジタル値を、意味のある「温度(℃)」に直す流れです。</p>
+                        <ul class="bullet-list">
+                            <li><i class="fa-solid fa-arrow-right"></i> 生のADC値を読み取る</li>
+                            <li><i class="fa-solid fa-arrow-right"></i> 電圧(V)に換算する</li>
+                            <li><i class="fa-solid fa-arrow-right"></i> 電圧を温度に変換する</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <pre><span class="kw">def</span> read_temp(pin_val):
+    <span class="comment"># 1. ADC値を電圧に</span>
+    voltage = (pin_val / 65535) * 3.3
+    
+    <span class="comment"># 2. 電圧を温度に変換</span>
+    temp = voltage * 100
+    
+    <span class="kw">return</span> round(temp, 1)
+
+t = read_temp(adc.read_u16())</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: Section Break -->
+        <div class="slide section-break">
+            <h2>ビット演算：極限のデータ制御</h2>
+            <p style="font-size: 24px; color: var(--text-muted); margin-top: 20px;">0と1の世界を直接操作する</p>
+        </div>
+
+        <!-- Slide 6: Shift Diagram -->
+        <div class="slide">
+            <div class="header"><div class="step-num">4</div><h2>シフト演算：桁を操る魔法</h2></div>
+            <div class="content">
+                <div class="two-col">
+                    <div>
+                        <p style="font-size: 22px; margin-bottom: 10px;">左シフト <code>&lt;&lt;</code> は、ビット全体を左にずらします。空いた右端には 0 が入ります。</p>
+                        <p style="font-size: 22px; font-weight: bold; color: var(--accent-red);">結果として、値は「2倍」になります。</p>
+                        <pre style="margin-top: 20px;">x = 5
+y = x << 1 <span class="comment"># yは10になる</span></pre>
+                    </div>
+                    
+                    <div class="bit-diagram">
+                        <div style="width: 100%; text-align: left; color: var(--text-muted); font-weight: bold;">元の値 (5)</div>
+                        <div class="bit-row">
+                            <div class="bit">0</div><div class="bit">0</div><div class="bit">0</div><div class="bit">0</div>
+                            <div class="bit">0</div><div class="bit highlight-blue">1</div><div class="bit">0</div><div class="bit highlight-blue">1</div>
+                        </div>
+                        <div class="shift-arrow"><i class="fa-solid fa-arrow-down"></i> 1つ左にずらす ( &lt;&lt; 1 )</div>
+                        <div class="bit-row">
+                            <div class="bit">0</div><div class="bit">0</div><div class="bit">0</div><div class="bit">0</div>
+                            <div class="bit highlight-blue">1</div><div class="bit">0</div><div class="bit highlight-blue">1</div><div class="bit zero-fill">0</div>
+                        </div>
+                        <div style="width: 100%; text-align: right; color: var(--accent-red); font-weight: bold; font-size: 22px;">結果 (10)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 7: AND Diagram -->
+        <div class="slide">
+            <div class="header"><div class="step-num">5</div><h2>AND演算 (&amp;)：特定のビットを抽出</h2></div>
+            <div class="content">
+                <div class="two-col">
+                    <div>
+                        <p style="font-size: 22px; margin-bottom: 10px;">調べたい場所だけ「1」にしたマスクを重ねることで、特定のフラグがONか確認できます。</p>
+                        <pre style="margin-top: 20px;">status = 0b10110100
+mask   = 0b00000100 
+
+<span class="kw">if</span> (status & mask) != 0:
+    print(<span class="comment">"3番目がON！"</span>)</pre>
+                    </div>
+                    
+                    <div class="bit-diagram">
+                        <div class="bit-row">
+                            <div class="bit">1</div><div class="bit">0</div><div class="bit">1</div><div class="bit">1</div>
+                            <div class="bit">0</div><div class="bit highlight-orange">1</div><div class="bit">0</div><div class="bit">0</div>
+                            <span class="bit-label">データ</span>
+                        </div>
+                        <div class="bit-row">
+                            <div class="bit">0</div><div class="bit">0</div><div class="bit">0</div><div class="bit">0</div>
+                            <div class="bit">0</div><div class="bit highlight-orange">1</div><div class="bit">0</div><div class="bit">0</div>
+                            <span class="bit-label">マスク (&amp;)</span>
+                        </div>
+                        <hr style="width: 90%; border-top: 3px solid #cbd5e1; margin: 5px 0;">
+                        <div class="bit-row">
+                            <div class="bit zero-fill">0</div><div class="bit zero-fill">0</div><div class="bit zero-fill">0</div><div class="bit zero-fill">0</div>
+                            <div class="bit zero-fill">0</div><div class="bit highlight-blue">1</div><div class="bit zero-fill">0</div><div class="bit zero-fill">0</div>
+                            <span class="bit-label" style="color: var(--primary);">結果!=0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 8: OR Diagram -->
+        <div class="slide">
+            <div class="header"><div class="step-num">6</div><h2>OR演算 (|)：データの合成（パッキング）</h2></div>
+            <div class="content">
+                <div class="two-col">
+                    <div>
+                        <p style="font-size: 22px; margin-bottom: 10px;">複数のフラグを、重なりを気にせずに1つのデータに合体（接着）させます。</p>
+                        <pre style="margin-top: 20px;">LED_RED = 1 <span class="comment"># 001</span>
+FAN_ON  = 4 <span class="comment"># 100</span>
+
+<span class="comment"># 赤LEDとファンを両方ON</span>
+cmd = LED_RED | FAN_ON</pre>
+                    </div>
+                    
+                    <div class="bit-diagram">
+                        <div class="bit-row">
+                            <div class="bit">0</div><div class="bit">0</div><div class="bit">0</div><div class="bit">0</div>
+                            <div class="bit">0</div><div class="bit">0</div><div class="bit">0</div><div class="bit highlight-red">1</div>
+                            <span class="bit-label">赤LED (1)</span>
+                        </div>
+                        <div class="bit-row">
+                            <div class="bit">0</div><div class="bit">0</div><div class="bit">0</div><div class="bit">0</div>
+                            <div class="bit">0</div><div class="bit highlight-blue">1</div><div class="bit">0</div><div class="bit">0</div>
+                            <span class="bit-label">ファン (4)</span>
+                        </div>
+                        <hr style="width: 90%; border-top: 3px solid #cbd5e1; margin: 5px 0;">
+                        <div class="bit-row">
+                            <div class="bit">0</div><div class="bit">0</div><div class="bit">0</div><div class="bit">0</div>
+                            <div class="bit">0</div><div class="bit highlight-blue">1</div><div class="bit">0</div><div class="bit highlight-red">1</div>
+                            <span class="bit-label" style="color: var(--primary);">合成 (5)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 9: I2C Example -->
+        <div class="slide">
+            <div class="header"><div class="step-num">7</div><h2>実践：センサーデータの結合 (I2C)</h2></div>
+            <div class="content">
+                <p style="font-size: 22px; text-align: center;">センサーからバラバラに送られてくる「上位8bit」と「下位8bit」を繋げます。</p>
+                <div class="bit-diagram" style="margin: 20px auto; width: 80%;">
+                    <div style="display: flex; gap: 40px; margin-bottom: 10px;">
+                        <div style="text-align: center;">
+                            <div style="font-weight: bold; margin-bottom: 5px;">上位(High): 0x12</div>
+                            <div class="bit-row">
+                                <div class="bit">0</div><div class="bit">0</div><div class="bit">0</div><div class="bit">1</div>
+                                <div class="bit">0</div><div class="bit">0</div><div class="bit">1</div><div class="bit">0</div>
+                            </div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-weight: bold; margin-bottom: 5px;">下位(Low): 0x34</div>
+                            <div class="bit-row">
+                                <div class="bit">0</div><div class="bit">0</div><div class="bit">1</div><div class="bit">1</div>
+                                <div class="bit">0</div><div class="bit">1</div><div class="bit">0</div><div class="bit">0</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="shift-arrow"><i class="fa-solid fa-arrow-down"></i> (High &lt;&lt; 8) | Low で合体！</div>
+                    <div class="bit-row" style="background: #e0f2fe; padding: 10px; border-radius: 8px;">
+                        <div class="bit highlight-blue">0</div><div class="bit highlight-blue">0</div><div class="bit highlight-blue">0</div><div class="bit highlight-blue">1</div>
+                        <div class="bit highlight-blue">0</div><div class="bit highlight-blue">0</div><div class="bit highlight-blue">1</div><div class="bit highlight-blue">0</div>
+                        <div class="bit highlight-green">0</div><div class="bit highlight-green">0</div><div class="bit highlight-green">1</div><div class="bit highlight-green">1</div>
+                        <div class="bit highlight-green">0</div><div class="bit highlight-green">1</div><div class="bit highlight-green">0</div><div class="bit highlight-green">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 10: 2's Complement Theory (Odometer) -->
+        <div class="slide">
+            <div class="header"><div class="step-num">8</div><h2>2の補数：車のメーターの逆回転</h2></div>
+            <div class="content">
+                <div class="two-col">
+                    <div>
+                        <p style="font-size: 26px; margin-bottom: 20px;">コンピュータには「マイナス記号」が存在しません。<br>そこで、<strong>0から逆に回ってカンストする現象</strong>を利用します。</p>
+                        <ul class="bullet-list" style="margin-top: 30px;">
+                            <li><i class="fa-solid fa-arrow-right"></i> 桁数（ビット数）には上限がある。</li>
+                            <li><i class="fa-solid fa-arrow-right"></i> 0 から 1 を引くと最大値に戻る。</li>
+                            <li><i class="fa-solid fa-arrow-right"></i> その「最大値」を <strong>-1</strong> として扱う！</li>
+                        </ul>
+                    </div>
+                    <div style="background: white; padding: 40px; border-radius: 20px; text-align: center; border: 5px solid var(--accent-red); box-shadow: 0 10px 25px rgba(0,0,0,0.05);">
+                        <h3 style="color: var(--accent-red); font-size: 28px; margin-bottom: 20px;"><i class="fa-solid fa-car"></i> オドメーター（距離計）の法則</h3>
+                        <div style="font-size: 60px; font-family: 'Fira Code', monospace; background: #1e293b; color: white; padding: 15px; border-radius: 12px; letter-spacing: 15px; display: inline-block;">0000</div>
+                        <div style="font-weight: bold; margin: 20px 0; font-size: 24px; color: var(--text-muted);"><i class="fa-solid fa-arrow-down"></i> 1引く（-1）と... <i class="fa-solid fa-arrow-down"></i></div>
+                        <div style="font-size: 60px; font-family: 'Fira Code', monospace; background: #1e293b; color: var(--accent-red); padding: 15px; border-radius: 12px; letter-spacing: 15px; display: inline-block;">9999</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 11: MSB -->
+        <div class="slide">
+            <div class="header"><div class="step-num">9</div><h2>MSB（最上位ビット）とマイナス</h2></div>
+            <div class="content">
+                <div class="two-col">
+                    <div>
+                        <p style="font-size: 24px; margin-bottom: 20px;">2の補数のルールでは、<strong>一番左のビット（MSB）</strong>を見れば、その数がプラスかマイナスかが分かります。</p>
+                        <pre style="margin-top: 30px;">
+<span class="comment"># 8ビットでの表現例</span>
+0xFF (255)  ->  -1
+0xFE (254)  ->  -2
+...
+0x80 (128)  -> -128</pre>
+                    </div>
+                    
+                    <div class="bit-diagram" style="padding: 40px; align-items: flex-start;">
+                        <div style="font-weight: bold; font-size: 24px; margin-bottom: 20px; align-self: center;">8ビットで「-1 (0xFF)」を表すと</div>
+                        <div class="bit-row" style="margin-bottom: 10px; align-self: center;">
+                            <div class="bit highlight-red" style="border-width: 4px; width: 50px; height: 60px; font-size: 32px;">1</div>
+                            <div class="bit" style="width: 50px; height: 60px; font-size: 32px;">1</div><div class="bit" style="width: 50px; height: 60px; font-size: 32px;">1</div><div class="bit" style="width: 50px; height: 60px; font-size: 32px;">1</div>
+                            <div class="bit" style="width: 50px; height: 60px; font-size: 32px;">1</div><div class="bit" style="width: 50px; height: 60px; font-size: 32px;">1</div><div class="bit" style="width: 50px; height: 60px; font-size: 32px;">1</div><div class="bit" style="width: 50px; height: 60px; font-size: 32px;">1</div>
+                        </div>
+                        <div style="width: 100%; display: flex; justify-content: flex-start; padding-left: 25px;">
+                            <div style="color: var(--accent-red); font-weight: bold; text-align: left; line-height: 1.5; font-size: 22px;">
+                                <i class="fa-solid fa-arrow-up" style="font-size: 30px; margin-bottom: 10px;"></i><br>
+                                <strong>MSB (Most Significant Bit: 最上位ビット)</strong><br>
+                                符号付き整数の場合、ここが <strong>1</strong> なら<br>
+                                全体を「マイナス」として解釈する約束です。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 12: Summary table -->
+        <div class="slide">
+            <div class="header"><div class="step-num"><i class="fa-solid fa-list"></i></div><h2>ビット演算子まとめ</h2></div>
+            <div class="content">
+                <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; font-size: 24px; box-shadow: 0 10px 20px rgba(0,0,0,0.05);">
+                    <tr style="background: var(--primary); color: white;">
+                        <th style="padding: 20px;">演算</th>
+                        <th style="padding: 20px;">記号</th>
+                        <th style="padding: 20px;">主な用途</th>
+                    </tr>
+                    <tr><td style="padding: 20px; border-bottom: 1px solid #eee;">論理積 (AND)</td><td style="text-align:center; font-family: monospace; font-weight: bold; color: var(--accent-red);"><code>&amp;</code></td><td>ビットの抽出、マスク処理</td></tr>
+                    <tr><td style="padding: 20px; border-bottom: 1px solid #eee;">論理和 (OR)</td><td style="text-align:center; font-family: monospace; font-weight: bold; color: var(--accent-red);"><code>|</code></td><td>ビットの合成、パッキング</td></tr>
+                    <tr><td style="padding: 20px; border-bottom: 1px solid #eee;">排他的論理和</td><td style="text-align:center; font-family: monospace; font-weight: bold; color: var(--accent-red);"><code>^</code></td><td>ビットの反転、エラーチェック</td></tr>
+                    <tr><td style="padding: 20px; border-bottom: 1px solid #eee;">シフト</td><td style="text-align:center; font-family: monospace; font-weight: bold; color: var(--accent-red);"><code>&lt;&lt;</code> <code>&gt;&gt;</code></td><td>桁の移動 (2倍/半分)</td></tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Slide 13: End -->
+        <div class="slide title-slide">
+            <h1 style="font-size: 60px;">お疲れ様でした！</h1>
+            <p style="color: #38bdf8; font-size: 32px; margin-top: 30px;">関数とビットを使いこなし、<br>効率的で美しいコードを目指しましょう。</p>
+            <div style="margin-top: 50px; padding: 20px; border: 2px solid #38bdf8; border-radius: 15px;">
+                <p style="font-size: 24px; margin: 0;">次回予告：割り込み処理とリアルタイム性</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Controls -->
+    <div id="controls">
+        <button class="nav-btn" id="prev-btn"><i class="fa-solid fa-chevron-left"></i> 前へ</button>
+        <div class="nav-dots" id="dots-container"></div>
+        <button class="nav-btn" id="next-btn">次へ <i class="fa-solid fa-chevron-right"></i></button>
+    </div>
+</div>
+
+<script>
+    const track = document.getElementById('slide-track');
+    const slides = document.querySelectorAll('.slide');
+    const wrapper = document.getElementById('presentation-wrapper');
+    const dotsContainer = document.getElementById('dots-container');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    
+    let currentSlide = 0;
+    const totalSlides = slides.length;
+
+    // ドット生成
+    slides.forEach((_, i) => {
+        const dot = document.createElement('div');
+        dot.classList.add('dot');
+        if (i === 0) dot.classList.add('active');
+        dot.addEventListener('click', () => goToSlide(i));
+        dotsContainer.appendChild(dot);
+    });
+
+    const dots = document.querySelectorAll('.dot');
+
+    function updateScale() {
+        const winW = window.innerWidth;
+        const winH = window.innerHeight;
+        const scale = Math.min(winW / 1280, winH / 720) * 0.95;
+        wrapper.style.transform = `scale(${scale})`;
+    }
+
+    function goToSlide(index) {
+        if (index < 0 || index >= totalSlides) return;
+        currentSlide = index;
+        const movePercent = (currentSlide * (100 / totalSlides));
+        track.style.transform = `translateX(-${movePercent}%)`;
+        
+        dots.forEach((d, i) => {
+            d.classList.toggle('active', i === currentSlide);
+        });
+    }
+
+    function next() { goToSlide(currentSlide + 1); }
+    function prev() { goToSlide(currentSlide - 1); }
+
+    window.addEventListener('resize', updateScale);
+    updateScale();
+
+    document.body.addEventListener('click', (e) => {
+        if (!e.target.closest('#controls')) next();
+    });
+
+    prevBtn.addEventListener('click', (e) => { e.stopPropagation(); prev(); });
+    nextBtn.addEventListener('click', (e) => { e.stopPropagation(); next(); });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') {
+            e.preventDefault(); next();
+        } else if (e.key === 'ArrowLeft') {
+            e.preventDefault(); prev();
+        }
+    });
+</script>
+
+</body>
+</html>

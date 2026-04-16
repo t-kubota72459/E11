@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PLC vs マイコン 比較ガイド</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+JP:wght@400;700;900&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --plc-blue: #004a99;
+            --mcu-orange: #e67e22;
+            --bg-dark: #0f172a;
+            --bg-light: #f8fafc;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: var(--bg-dark);
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh; width: 100vw; overflow: hidden;
+            font-family: 'Noto Sans JP', sans-serif;
+        }
+
+        #presentation-area {
+            position: relative;
+            width: 1280px; height: 720px;
+            background: var(--bg-light);
+            transform-origin: center;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+
+        .slide {
+            display: none; width: 100%; height: 100%; padding: 60px;
+            background: white; position: absolute; top: 0; left: 0;
+        }
+        .slide.active { display: flex; flex-direction: column; animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Header */
+        .header { display: flex; align-items: center; margin-bottom: 30px; border-bottom: 3px solid #e2e8f0; padding-bottom: 15px; }
+        .header i { font-size: 32px; color: var(--plc-blue); margin-right: 20px; }
+        .header h2 { font-size: 36px; font-weight: 900; color: var(--bg-dark); }
+
+        /* Content Layouts */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; flex: 1; }
+        .card { padding: 30px; border-radius: 20px; position: relative; display: flex; flex-direction: column; }
+        .plc-card { background: #eff6ff; border: 2px solid var(--plc-blue); }
+        .mcu-card { background: #fff7ed; border: 2px solid var(--mcu-orange); }
+
+        .card-label { 
+            position: absolute; top: -15px; left: 20px; padding: 4px 20px; 
+            border-radius: 50px; color: white; font-weight: bold; font-size: 14px;
+        }
+        .plc-label { background: var(--plc-blue); }
+        .mcu-label { background: var(--mcu-orange); }
+
+        h3 { font-size: 28px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+        p { font-size: 20px; line-height: 1.6; color: var(--text-main); margin-bottom: 15px; }
+        ul { list-style: none; }
+        li { font-size: 19px; margin-bottom: 10px; display: flex; align-items: flex-start; gap: 10px; }
+        li::before { content: "•"; color: var(--text-muted); font-weight: bold; }
+
+        /* Title Slide Custom */
+        .title-slide { background: linear-gradient(135deg, var(--plc-blue) 0%, #001e3d 100%); color: white; justify-content: center; align-items: center; text-align: center; }
+        .title-slide h1 { font-size: 64px; font-weight: 900; margin-bottom: 20px; }
+        .title-slide p { font-size: 24px; opacity: 0.8; color: white; }
+
+        /* Visuals */
+        .visual-box { flex: 1; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.5); border-radius: 10px; margin-top: 10px; padding: 20px; }
+        .code { font-family: 'Fira Code', monospace; background: #1e293b; color: #e2e8f0; padding: 15px; border-radius: 8px; font-size: 16px; width: 100%; }
+
+        /* Controls */
+        .controls {
+            position: fixed; bottom: 20px; right: 25px; background: rgba(15, 23, 42, 0.8);
+            padding: 10px 20px; border-radius: 100px; display: flex; align-items: center; gap: 20px; z-index: 1000;
+        }
+        .btn { background: none; border: none; color: white; cursor: pointer; font-size: 20px; transition: 0.2s; }
+        .btn:hover { transform: scale(1.2); }
+        .counter { color: white; font-family: 'Inter'; font-weight: 600; min-width: 60px; text-align: center; }
+
+    </style>
+</head>
+<body>
+
+<div id="presentation-area">
+    <div class="slide active title-slide">
+        <i class="fa-solid fa-microchip" style="font-size: 80px; margin-bottom: 30px;"></i>
+        <h1>PLC vs マイコン</h1>
+        <p>産業用「当たり前」をマイコンで分解して理解する</p>
+    </div>
+
+    <div class="slide">
+        <div class="header"><i class="fa-solid fa-brain"></i><h2>「脳」を切り替える</h2></div>
+        <div class="grid-2">
+            <div class="card plc-card">
+                <span class="card-label plc-label">PLC (産業用)</span>
+                <h3><i class="fa-solid fa-factory"></i> 産業用PC</h3>
+                <p>工場の過酷な環境（ノイズ・熱）に耐える、完成されたシステム。</p>
+                <ul>
+                    <li>壊れないことが最優先</li>
+                    <li>OSとハードが一体化</li>
+                    <li>配線すれば動く「ブラックボックス」</li>
+                </ul>
+            </div>
+            <div class="card mcu-card">
+                <span class="card-label mcu-label">マイコン (汎用)</span>
+                <h3><i class="fa-solid fa-robot"></i> 意志あるチップ</h3>
+                <p>ESP32等の小型チップ。自由度が極めて高いが、全て自分で組む必要がある。</p>
+                <ul>
+                    <li>安価でどこにでも組み込める</li>
+                    <li>回路もソフトも自作</li>
+                    <li>「中身が見える」から面白い</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide">
+        <div class="header"><i class="fa-solid fa-bolt"></i><h2>プログラムはどう動く？</h2></div>
+        <div class="grid-2">
+            <div class="card plc-card">
+                <span class="card-label plc-label">スキャン方式</span>
+                <h3>全行を高速周回</h3>
+                <p>1行目から最終行までを読み取って1周。これを永遠に繰り返す。</p>
+                <div class="visual-box">
+                    <i class="fa-solid fa-rotate" style="font-size: 80px; color: var(--plc-blue);"></i>
+                </div>
+                <p style="font-size: 14px; text-align: center;">全ての入力状態が毎サイクル同期される</p>
+            </div>
+            <div class="card mcu-card">
+                <span class="card-label mcu-label">逐次実行</span>
+                <h3>1行ずつ順番に</h3>
+                <p>書いた順番通りに上から下へ進む。最後まで行ったら終わり。</p>
+                <div class="code">
+print("A")<br>
+if button.value():<br>
+&nbsp;&nbsp;&nbsp;&nbsp;print("B")<br>
+# ここで止まる（ループしない）
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide">
+        <div class="header"><i class="fa-solid fa-arrows-spin"></i><h2>「ループ」は誰が作る？</h2></div>
+        <div class="grid-2">
+            <div class="card plc-card">
+                <span class="card-label plc-label">PLC</span>
+                <h3>自動ループ</h3>
+                <p>ハードウェア/OS側で自動的にループ処理が行われる。</p>
+                <ul>
+                    <li>開発者は「中身」だけ書けばいい</li>
+                    <li>止めるには「STOP」スイッチが必要</li>
+                </ul>
+            </div>
+            <div class="card mcu-card">
+                <span class="card-label mcu-label">マイコン</span>
+                <h3>意志あるループ</h3>
+                <p>自分で <code>while True:</code> 等を書き、意図的に無限ループを作る。</p>
+                <div class="code">
+while True:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;# ここに処理を書く<br>
+&nbsp;&nbsp;&nbsp;&nbsp;# ループも自分で制御する
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide">
+        <div class="header"><i class="fa-solid fa-wave-square"></i><h2>爆速CPU vs 現実のスイッチ</h2></div>
+        <div class="content">
+            <p>マイコン（CPU）は速すぎる。物理スイッチが押された瞬間の「バタつき」さえも拾ってしまう。</p>
+            <div class="grid-2">
+                <div class="card" style="background: #f1f5f9;">
+                    <h3>チャタリング現象</h3>
+                    <p>スイッチが「ON」になる瞬間、物理的には数百μsの間、激しくON/OFFを繰り返している。</p>
+                    <i class="fa-solid fa-arrow-trend-up" style="font-size: 60px; color: #ef4444;"></i>
+                </div>
+                <div class="card mcu-card">
+                    <h3>対策：ソフトウェア処理</h3>
+                    <p>マイコンでは <code>time.sleep(0.02)</code> 等で「バタつき」が収まるのを待つ必要がある。</p>
+                    <p>※PLCではこの処理は内部で自動的に行われている！</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide">
+        <div class="header"><i class="fa-solid fa-plug"></i><h2>不定状態（フラフラ）を防ぐ</h2></div>
+        <div class="content">
+            <p>スイッチが押されていない時、ピンの電圧はどうなるか？</p>
+            <div class="grid-2">
+                <div class="card plc-card">
+                    <h3>PLC：当たり前の安定</h3>
+                    <p>内部回路でプルアップ/プルダウンが完結している。ユーザーは気にする必要がない。</p>
+                </div>
+                <div class="card mcu-card">
+                    <h3>マイコン：プルアップ抵抗</h3>
+                    <p>何もしないと「0でも1でもない不安定な状態」になる。内蔵抵抗を有効にする等の設定が必須。</p>
+                    <div class="code">
+pin = Pin(14, Pin.IN, Pin.PULL_UP)
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide">
+        <div class="header"><i class="fa-solid fa-list-check"></i><h2>まとめ：PLC vs マイコン</h2></div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 20px;">
+            <thead>
+                <tr style="background: var(--bg-dark); color: white;">
+                    <th style="padding: 15px; border: 1px solid #ddd;">比較項目</th>
+                    <th style="padding: 15px; border: 1px solid #ddd;">PLC (シーケンス制御)</th>
+                    <th style="padding: 15px; border: 1px solid #ddd;">マイコン (Python/ESP32)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="padding: 15px; border: 1px solid #ddd; font-weight: bold;">実行方式</td>
+                    <td style="padding: 15px; border: 1px solid #ddd;">スキャン方式（全行高速周回）</td>
+                    <td style="padding: 15px; border: 1px solid #ddd;">逐次実行（1行ずつ順番に）</td>
+                </tr>
+                <tr>
+                    <td style="padding: 15px; border: 1px solid #ddd; font-weight: bold;">ループ</td>
+                    <td style="padding: 15px; border: 1px solid #ddd;">自動（OSが回す）</td>
+                    <td style="padding: 15px; border: 1px solid #ddd;">手動（while True 等）</td>
+                </tr>
+                <tr>
+                    <td style="padding: 15px; border: 1px solid #ddd; font-weight: bold;">入力の安定化</td>
+                    <td style="padding: 15px; border: 1px solid #ddd;">自動（ハード側で処理）</td>
+                    <td style="padding: 15px; border: 1px solid #ddd;">手動（コードや設定で書く）</td>
+                </tr>
+            </tbody>
+        </table>
+        <p style="margin-top: 30px; font-weight: bold; color: var(--plc-blue);">→ マイコンは「自由度が高い」からこそ、仕組みの理解が重要！</p>
+    </div>
+</div>
+
+<div class="controls">
+    <button class="btn" id="prevBtn"><i class="fa-solid fa-chevron-left"></i></button>
+    <div class="counter" id="counter">1 / 7</div>
+    <button class="btn" id="nextBtn"><i class="fa-solid fa-chevron-right"></i></button>
+</div>
+
+<script>
+    const slides = document.querySelectorAll('.slide');
+    const counter = document.getElementById('counter');
+    let current = 0;
+
+    function update() {
+        slides.forEach((s, i) => s.classList.toggle('active', i === current));
+        counter.textContent = `${current + 1} / ${slides.length}`;
+    }
+
+    document.getElementById('nextBtn').onclick = () => { if(current < slides.length-1) current++; update(); };
+    document.getElementById('prevBtn').onclick = () => { if(current > 0) current--; update(); };
+
+    // スケーリング（16:9維持）
+    function rescale() {
+        const area = document.getElementById('presentation-area');
+        const scale = Math.min(window.innerWidth / 1300, window.innerHeight / 750);
+        area.style.transform = `scale(${scale})`;
+    }
+    window.onresize = rescale;
+    rescale();
+
+    document.onkeydown = (e) => {
+        if(e.key === 'ArrowRight' || e.key === ' ') document.getElementById('nextBtn').onclick();
+        if(e.key === 'ArrowLeft') document.getElementById('prevBtn').onclick();
+    }
+</script>
+
+</body>
+</html>
