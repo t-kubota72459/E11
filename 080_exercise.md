@@ -8,7 +8,7 @@
 
 <br/>
 <div style="text-align: center;">
-  <img src="./images/fig_2026-05-25-1.png" width="70%">
+  <img src="./images/ChatGPT Image 2026年5月25日 21_47_43.png" width="60%">
   <br/>
   システム概要
 </div>
